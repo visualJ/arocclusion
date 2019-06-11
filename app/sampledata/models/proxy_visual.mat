@@ -1,0 +1,22 @@
+material {
+    name : "proxy_visual",
+    parameters : [
+            {
+               type : float4,
+               name : baseColor
+            }
+    ],
+    requires : [
+    ],
+    shadingModel : lit,
+    blending : fade
+}
+
+
+fragment {
+    void material(inout MaterialInputs material) {
+            prepareMaterial(material);
+            material.baseColor = materialParams.baseColor;
+            material.baseColor.r = 1.0 - getNdotV();
+        }
+}

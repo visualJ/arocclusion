@@ -1,0 +1,24 @@
+material {
+    name : "proxy",
+    parameters : [
+            {
+               type : float4,
+               name : baseColor
+            }
+    ],
+    requires : [
+    ],
+    shadingModel : unlit,
+    colorWrite : false,
+    depthWrite: true,
+    //shadowMultiplier : true,
+    blending : opaque
+}
+
+
+fragment {
+    void material(inout MaterialInputs material) {
+            prepareMaterial(material);
+            material.baseColor = float4(0.0,0.0,0.0,0.7);
+        }
+}
