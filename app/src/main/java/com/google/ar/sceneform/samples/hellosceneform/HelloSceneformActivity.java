@@ -101,7 +101,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
                 .build()
                 .thenAccept(renderable -> {
                     andyRenderable = renderable;
-                    andyRenderable.setRenderPriority(7);
+//                    andyRenderable.setRenderPriority(7);
                 })
                 .exceptionally(
                         throwable -> {
@@ -161,6 +161,8 @@ public class HelloSceneformActivity extends AppCompatActivity {
                     andy.setRenderable(andyRenderable);
                     andy.select();
                 });
+
+        arFragment.getArSceneView().setCameraStreamRenderPriority(1);
     }
 
     private void onToggleProxyMaterialButtonClick(View v) {
@@ -171,7 +173,6 @@ public class HelloSceneformActivity extends AppCompatActivity {
     }
 
     private void onProxyGenButtonClick(View v) {
-        Log.d(TAG, "onProxyGenButtonClick: clicked the button");
         ArSceneView arSceneView = arFragment.getArSceneView();
         Frame arFrame = arSceneView.getArFrame();
 
@@ -182,14 +183,13 @@ public class HelloSceneformActivity extends AppCompatActivity {
         // aquire pointcloud and build vertex list
         PointCloud pointCloud = arFrame.acquirePointCloud();
         FloatBuffer points = pointCloud.getPoints();
-        Log.d(TAG, "onProxyGenButtonClick: " + points.limit());
 
         List<Vertex> verts = new ArrayList<>();
         while (points.remaining() >= 4) {
             float[] point = new float[]{points.get(), points.get(), points.get()};
             float certainty = points.get(); // todo filter out uncertain points
 
-            // transform copy with inverse camera pose
+            // transform point into camera coordinate system
             point = arFrame.getAndroidSensorPose().inverse().transformPoint(point);
 
             verts.add(new Vertex.Builder().setPosition(new Vector3(point[0], point[1], point[2])).build());
@@ -236,7 +236,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
         // build model
 
         List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
-        subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("Hans").setMaterial(proxyMat).setTriangleIndices(indices).build());
+        subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(proxyMat).setTriangleIndices(indices).build());
 
         RenderableDefinition renderableDefinition = RenderableDefinition.builder()
                 .setVertices(verts)
@@ -248,7 +248,7 @@ public class HelloSceneformActivity extends AppCompatActivity {
                 .thenAccept(modelRenderable -> {
                     proxyRenderable = modelRenderable;
                     proxyRenderable.setMaterial(showProxies ? proxyVisualMat : proxyMat);
-                    proxyRenderable.setRenderPriority(7);
+//                    proxyRenderable.setRenderPriority(7);
                 })
                 .exceptionally(throwable -> {
                     throwable.printStackTrace();
