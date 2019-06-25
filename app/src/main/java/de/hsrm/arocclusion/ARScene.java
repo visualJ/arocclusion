@@ -12,6 +12,10 @@ public class ARScene {
         return subScenes;
     }
 
+    public void setSubScenes(List<ARSubScene> subScenes) {
+        this.subScenes = subScenes;
+    }
+
     public String getName() {
         return name;
     }

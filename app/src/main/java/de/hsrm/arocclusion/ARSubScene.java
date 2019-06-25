@@ -4,6 +4,7 @@ public class ARSubScene {
 
     private VirtualScene scene;
     private Environment environment;
+    private String name;
 
     public ARSubScene() {
         this(new VirtualScene(), new Environment());
@@ -28,5 +29,13 @@ public class ARSubScene {
 
     public void setEnvironment(Environment environment) {
         this.environment = environment;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
