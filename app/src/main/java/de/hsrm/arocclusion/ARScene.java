@@ -12,6 +12,10 @@ public class ARScene {
         return subScenes;
     }
 
+    public boolean hasSubScenes() {
+        return !subScenes.isEmpty();
+    }
+
     public void setSubScenes(List<ARSubScene> subScenes) {
         this.subScenes = subScenes;
     }
