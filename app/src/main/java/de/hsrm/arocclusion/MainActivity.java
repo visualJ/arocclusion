@@ -93,12 +93,6 @@ public class MainActivity extends AppCompatActivity {
 
         arSceneRepository = new ARSceneRepository(this);
 
-        ARScene arScene = new ARScene();
-        arScene.setName("test");
-        arScene.getSubScenes().add(new ARSubScene());
-        arSceneRepository.saveARScene(arScene);
-        loadAndActivateScene("test");
-
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
         ModelRenderable.builder()
@@ -111,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Unable to load andy renderable", Toast.LENGTH_LONG);
                             toast.setGravity(Gravity.CENTER, 0, 0);
                             toast.show();
+                            throwable.printStackTrace();
                             return null;
                         });
 
@@ -127,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Unable to load proxy renderable", Toast.LENGTH_LONG);
                             toast.setGravity(Gravity.CENTER, 0, 0);
                             toast.show();
+                            throwable.printStackTrace();
                             return null;
                         });
 
@@ -136,6 +132,15 @@ public class MainActivity extends AppCompatActivity {
                 .thenAccept(renderable -> {
                     proxyVisualMat = renderable.getMaterial();
                     proxyVisualMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
+
+                    // add a test scene, if not yet available
+                    if (!arSceneRepository.getARSceneNames().contains("test")) {
+                        ARScene arScene = new ARScene();
+                        arScene.setName("test");
+                        arScene.getSubScenes().add(new ARSubScene());
+                        arSceneRepository.saveARScene(arScene);
+                    }
+                    loadAndActivateScene("test");
                 })
                 .exceptionally(
                         throwable -> {
@@ -143,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Unable to load proxy renderable", Toast.LENGTH_LONG);
                             toast.setGravity(Gravity.CENTER, 0, 0);
                             toast.show();
+                            throwable.printStackTrace();
                             return null;
                         });
 
@@ -180,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
         Frame arFrame = arFragment.getArSceneView().getArFrame();
         if (arFrame != null) {
             ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame);
-            addProxy(proxy, showProxies ? proxyVisualMat : proxyMat);
+            addProxyToCurrentSubScene(proxy, showProxies ? proxyVisualMat : proxyMat);
             arSceneRepository.saveARScene(currentScene);
             arSceneRepository.debugPrintJson(currentScene);
         }
@@ -188,10 +194,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void activateSubScene(@Nullable ARSubScene subScene) {
         currentSubScene = subScene;
-        removeProxies();
+        removeProxiesFromScenegraph();
         if (subScene != null) {
             for (ProxyModel proxyModel : currentSubScene.getEnvironment().getProxies()) {
-                addProxy(proxyModel, showProxies ? proxyVisualMat : proxyMat);
+                addProxyToScenegraph(proxyModel, showProxies ? proxyVisualMat : proxyMat);
             }
         }
     }
@@ -199,24 +205,31 @@ public class MainActivity extends AppCompatActivity {
     private void loadAndActivateScene(String name) {
         try {
             currentScene = arSceneRepository.getARScene(name);
-            activateSubScene(currentScene.hasSubScenes() ? currentScene.getSubScenes().get(0) : null);
             arSceneRepository.debugPrintJson(currentScene);
+            activateSubScene(currentScene.hasSubScenes() ? currentScene.getSubScenes().get(0) : null);
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, "loadAndActivateScene: could not load ar scene " + name);
         }
     }
 
-    private void removeProxies() {
+    private void removeProxiesFromScenegraph() {
         for (Node proxyNode : proxyNodes) {
             proxyNode.setParent(null);
         }
     }
 
-    private void addProxy(ProxyModel proxy, Material material) {
+    private void addProxyToCurrentSubScene(ProxyModel proxy, Material material) {
+        if (currentSubScene == null) {
+            return;
+        }
         currentSubScene.getEnvironment().getProxies().add(proxy);
+        addProxyToScenegraph(proxy, material);
+    }
 
+    private void addProxyToScenegraph(ProxyModel proxy, Material material) {
         List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
+        Log.e(TAG, "addProxyToScenegraph: " + material + " : " + proxy.getTriangleIndices());
         subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(material).setTriangleIndices(proxy.getTriangleIndices()).build());
 
         RenderableDefinition renderableDefinition = RenderableDefinition.builder()
