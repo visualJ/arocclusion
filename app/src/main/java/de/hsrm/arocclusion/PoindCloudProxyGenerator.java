@@ -2,6 +2,8 @@ package de.hsrm.arocclusion;
 
 import com.google.ar.core.Frame;
 import com.google.ar.core.PointCloud;
+import com.google.ar.core.Pose;
+import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Vertex;
 
@@ -71,7 +73,12 @@ public class PoindCloudProxyGenerator {
             }
         }
 
-        return new ProxyModel(vertices, triangleIndices);
+        ProxyModel proxyModel = new ProxyModel(vertices, triangleIndices);
+        Pose androidSensorPose = frame.getAndroidSensorPose();
+        proxyModel.setPosition(new Vector3(androidSensorPose.tx(), androidSensorPose.ty(), androidSensorPose.tz()));
+        proxyModel.setRotation(new Quaternion(androidSensorPose.qx(), androidSensorPose.qy(), androidSensorPose.qz(), androidSensorPose.qw()));
+
+        return proxyModel;
     }
 
     private static String getVertIndexKey(Vector2D point) {

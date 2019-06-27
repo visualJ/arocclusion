@@ -2,7 +2,7 @@ package de.hsrm.arocclusion;
 
 public class ARSubScene {
 
-    private VirtualScene scene;
+    private VirtualScene virtualScene;
     private Environment environment;
     private String name;
 
@@ -10,17 +10,17 @@ public class ARSubScene {
         this(new VirtualScene(), new Environment());
     }
 
-    public ARSubScene(VirtualScene scene, Environment environment) {
-        this.scene = scene;
+    public ARSubScene(VirtualScene virtualScene, Environment environment) {
+        this.virtualScene = virtualScene;
         this.environment = environment;
     }
 
-    public VirtualScene getScene() {
-        return scene;
+    public VirtualScene getVirtualScene() {
+        return virtualScene;
     }
 
-    public void setScene(VirtualScene scene) {
-        this.scene = scene;
+    public void setVirtualScene(VirtualScene virtualScene) {
+        this.virtualScene = virtualScene;
     }
 
     public Environment getEnvironment() {

@@ -34,12 +34,8 @@ import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
-import com.google.ar.core.Pose;
 import com.google.ar.sceneform.AnchorNode;
-import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.Node;
-import com.google.ar.sceneform.math.Quaternion;
-import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.RenderableDefinition;
@@ -49,6 +45,10 @@ import com.google.ar.sceneform.ux.TransformableNode;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
 /**
  * This is an example activity that uses the Sceneform UX package to make common AR tasks easier.
  */
@@ -56,17 +56,22 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
 
+    @BindView(R.id.proxy_gen_button)
+    Button proxyGenButton;
+    @BindView(R.id.toggleProxyMaterialButton)
+    Button toggleProxyMaterialButton;
+
     private ArFragment arFragment;
     private ModelRenderable andyRenderable;
-    private Button proxyGenButton;
-    private Button toggleProxyMaterialButton;
     private Material proxyMat;
     private Material proxyVisualMat;
     private List<Node> proxyNodes = new ArrayList<>();
     private boolean showProxies = true;
 
-    // build model
     private PoindCloudProxyGenerator poindCloudProxyGenerator = new PoindCloudProxyGenerator();
+    private ARSceneRepository arSceneRepository;
+    private ARScene currentScene;
+    private ARSubScene currentSubScene;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -81,21 +86,19 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_ux);
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
-        proxyGenButton = findViewById(R.id.proxy_gen_button);
-        toggleProxyMaterialButton = findViewById(R.id.toggleProxyMaterialButton);
-        toggleProxyMaterialButton.setOnClickListener(this::onToggleProxyMaterialButtonClick);
+        ButterKnife.bind(this);
 
-        proxyGenButton.setOnClickListener(this::onProxyGenButtonClick);
-//        MaterialFactory.makeOpaqueWithColor(this, new Color(.5f, .5f, .5f)).thenAccept(material -> proxyMat = material);
+        arSceneRepository = new ARSceneRepository(this);
+        currentScene = arSceneRepository.getARScene("test");
+        currentSubScene = currentScene.getSubScenes().get(0);
+        arSceneRepository.debugPrintJson(currentScene);
 
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
         ModelRenderable.builder()
                 .setSource(this, R.raw.andy)
                 .build()
-                .thenAccept(renderable -> {
-                    andyRenderable = renderable;
-                })
+                .thenAccept(renderable -> andyRenderable = renderable)
                 .exceptionally(
                         throwable -> {
                             Toast toast =
@@ -158,25 +161,28 @@ public class MainActivity extends AppCompatActivity {
         arFragment.getArSceneView().setCameraStreamRenderPriority(1);
     }
 
-    private void onToggleProxyMaterialButtonClick(View v) {
+    @OnClick(R.id.toggleProxyMaterialButton)
+    void onToggleProxyMaterialButtonClick(View v) {
         showProxies = !showProxies;
         for (Node proxyNode : proxyNodes) {
             proxyNode.getRenderable().setMaterial(showProxies ? proxyVisualMat : proxyMat);
         }
     }
 
-    private void onProxyGenButtonClick(View v) {
-        ArSceneView arSceneView = arFragment.getArSceneView();
-        Frame arFrame = arSceneView.getArFrame();
-
-        if (arFrame == null) {
-            return;
+    @OnClick(R.id.proxy_gen_button)
+    void onProxyGenButtonClick(View v) {
+        Frame arFrame = arFragment.getArSceneView().getArFrame();
+        if (arFrame != null) {
+            ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame);
+            addProxy(proxy, showProxies ? proxyVisualMat : proxyMat);
+            arSceneRepository.debugPrintJson(currentScene);
         }
+    }
 
-        ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame);
-
+    private void addProxy(ProxyModel proxy, Material material) {
         List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
-        subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(proxyMat).setTriangleIndices(proxy.getTriangleIndices()).build());
+        subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(material).setTriangleIndices(proxy.getTriangleIndices()).build());
+        currentSubScene.getEnvironment().getProxies().add(proxy);
 
         RenderableDefinition renderableDefinition = RenderableDefinition.builder()
                 .setVertices(proxy.getVertices())
@@ -186,14 +192,13 @@ public class MainActivity extends AppCompatActivity {
                 .setSource(renderableDefinition)
                 .build()
                 .thenAccept(modelRenderable -> {
-                    modelRenderable.setMaterial(showProxies ? proxyVisualMat : proxyMat);
+                    modelRenderable.setMaterial(material);
                     // place model in scene
                     Node node = new Node();
-                    node.setParent(arSceneView.getScene());
+                    node.setParent(arFragment.getArSceneView().getScene());
                     node.setRenderable(modelRenderable);
-                    Pose androidSensorPose = arFrame.getAndroidSensorPose();
-                    node.setWorldPosition(new Vector3(androidSensorPose.tx(), androidSensorPose.ty(), androidSensorPose.tz()));
-                    node.setWorldRotation(new Quaternion(androidSensorPose.qx(), androidSensorPose.qy(), androidSensorPose.qz(), androidSensorPose.qw()));
+                    node.setWorldPosition(proxy.getPosition());
+                    node.setWorldRotation(proxy.getRotation());
                     proxyNodes.add(node);
                 })
                 .exceptionally(throwable -> {
