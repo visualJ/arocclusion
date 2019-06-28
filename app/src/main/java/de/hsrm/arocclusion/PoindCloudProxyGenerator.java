@@ -1,5 +1,6 @@
 package de.hsrm.arocclusion;
 
+import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
 import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
@@ -19,7 +20,7 @@ import io.github.jdiemke.triangulation.Vector2D;
 
 public class PoindCloudProxyGenerator {
 
-    public ProxyModel generateProxyModel(Frame frame) {
+    public ProxyModel generateProxyModel(Frame frame, Anchor anchor) {
         List<Vertex> vertices = new ArrayList<>();
         List<Integer> triangleIndices = new ArrayList<>();
 
@@ -75,8 +76,9 @@ public class PoindCloudProxyGenerator {
 
         ProxyModel proxyModel = new ProxyModel(vertices, triangleIndices);
         Pose androidSensorPose = frame.getAndroidSensorPose();
-        proxyModel.setPosition(new Vector3(androidSensorPose.tx(), androidSensorPose.ty(), androidSensorPose.tz()));
-        proxyModel.setRotation(new Quaternion(androidSensorPose.qx(), androidSensorPose.qy(), androidSensorPose.qz(), androidSensorPose.qw()));
+        Pose relativeToAnchorPose = anchor.getPose().inverse().compose(androidSensorPose);
+        proxyModel.setPosition(new Vector3(relativeToAnchorPose.tx(), relativeToAnchorPose.ty(), relativeToAnchorPose.tz()));
+        proxyModel.setRotation(new Quaternion(relativeToAnchorPose.qx(), relativeToAnchorPose.qy(), relativeToAnchorPose.qz(), relativeToAnchorPose.qw()));
 
         return proxyModel;
     }

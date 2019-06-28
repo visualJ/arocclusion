@@ -18,6 +18,8 @@ package de.hsrm.arocclusion;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -31,10 +33,16 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.ar.core.Anchor;
+import com.google.ar.core.AugmentedImage;
+import com.google.ar.core.AugmentedImageDatabase;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Session;
+import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.ModelRenderable;
@@ -43,8 +51,13 @@ import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -63,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
     Button proxyGenButton;
     @BindView(R.id.toggleProxyMaterialButton)
     Button toggleProxyMaterialButton;
+    @BindView(R.id.new_scene_button)
+    Button newSceneButton;
 
     private ArFragment arFragment;
     private ModelRenderable andyRenderable;
@@ -75,6 +90,10 @@ public class MainActivity extends AppCompatActivity {
     private ARSceneRepository arSceneRepository;
     private ARScene currentScene;
     private ARSubScene currentSubScene;
+    private AnchorNode environmentNode = new AnchorNode();
+
+    private Set<AugmentedImage> augmentedImages = new HashSet<>();
+    private Anchor referencePointAnchor;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -92,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         arSceneRepository = new ARSceneRepository(this);
+        arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
+        arFragment.getArSceneView().getScene().addChild(environmentNode);
 
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
@@ -134,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
                     proxyVisualMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
 
                     // add a test scene, if not yet available
+                    // TODO: 27.06.2019 move this somewhere sensible
                     if (!arSceneRepository.getARSceneNames().contains("test")) {
                         ARScene arScene = new ARScene();
                         arScene.setName("test");
@@ -181,14 +203,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @OnClick(R.id.new_scene_button)
+    void onNewSceneButtonClick(View v) {
+        ARScene arScene = new ARScene();
+        arScene.setName("test");
+        arScene.getSubScenes().add(new ARSubScene());
+        arSceneRepository.saveARScene(arScene);
+        loadAndActivateScene("test");
+    }
+
     @OnClick(R.id.proxy_gen_button)
     void onProxyGenButtonClick(View v) {
         Frame arFrame = arFragment.getArSceneView().getArFrame();
         if (arFrame != null) {
-            ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame);
-            addProxyToCurrentSubScene(proxy, showProxies ? proxyVisualMat : proxyMat);
-            arSceneRepository.saveARScene(currentScene);
-            arSceneRepository.debugPrintJson(currentScene);
+            ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame, referencePointAnchor);
+            if (proxy != null) {
+                addProxyToCurrentSubScene(proxy, showProxies ? proxyVisualMat : proxyMat);
+                arSceneRepository.saveARScene(currentScene);
+                arSceneRepository.debugPrintJson(currentScene);
+            } else {
+                Log.e(TAG, "onProxyGenButtonClick: es konnte kein proxy erstellt werden");
+            }
         }
     }
 
@@ -202,10 +237,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void onUpdateFrame(FrameTime frameTime) {
+        Frame frame = arFragment.getArSceneView().getArFrame();
+
+        // If there is no frame or ARCore is not tracking yet, just return.
+        if (frame == null || frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+            return;
+        }
+
+        Collection<AugmentedImage> updatedAugmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
+        for (AugmentedImage updatedAugmentedImage : updatedAugmentedImages) {
+            switch (updatedAugmentedImage.getTrackingState()) {
+                case TRACKING:
+                    if (!augmentedImages.contains(updatedAugmentedImage)) {
+                        augmentedImages.add(updatedAugmentedImage);
+                        imageReferencePointDetected(updatedAugmentedImage);
+                    }
+                    break;
+                case STOPPED:
+                    augmentedImages.remove(updatedAugmentedImage);
+                    break;
+            }
+        }
+    }
+
     private void loadAndActivateScene(String name) {
         try {
             currentScene = arSceneRepository.getARScene(name);
-            arSceneRepository.debugPrintJson(currentScene);
+            setupImageReferencePointRecognition(currentScene);
             activateSubScene(currentScene.hasSubScenes() ? currentScene.getSubScenes().get(0) : null);
         } catch (IOException e) {
             e.printStackTrace();
@@ -243,16 +302,52 @@ public class MainActivity extends AppCompatActivity {
                     modelRenderable.setMaterial(material);
                     // place model in scene
                     Node node = new Node();
-                    node.setParent(arFragment.getArSceneView().getScene());
+                    node.setParent(environmentNode);
                     node.setRenderable(modelRenderable);
-                    node.setWorldPosition(proxy.getPosition());
-                    node.setWorldRotation(proxy.getRotation());
+                    node.setLocalPosition(proxy.getPosition());
+                    node.setLocalRotation(proxy.getRotation());
                     proxyNodes.add(node);
                 })
                 .exceptionally(throwable -> {
                     throwable.printStackTrace();
                     return null;
                 });
+    }
+
+    private void setupImageReferencePointRecognition(ARScene scene) {
+        // TODO: 28.06.2019 add all images from the scenes reference points
+        Session session = arFragment.getArSceneView().getSession();
+        Config config = Objects.requireNonNull(session).getConfig();
+        AugmentedImageDatabase augmentedImageDatabase = new AugmentedImageDatabase(session);
+        try (InputStream is = getAssets().open("default_marker.jpg")) {
+            Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
+            augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
+        } catch (IOException e) {
+            Log.e(TAG, "IO exception loading augmented image bitmap.", e);
+        }
+        config.setAugmentedImageDatabase(augmentedImageDatabase);
+        session.configure(config);
+    }
+
+    private void imageReferencePointDetected(AugmentedImage image) {
+        Log.d(TAG, "imageReferencePointDetected: " + image.getName());
+        if (referencePointAnchor != null) {
+            referencePointAnchor.detach();
+        }
+        referencePointAnchor = arFragment.getArSceneView().getSession().createAnchor(image.getCenterPose());
+        environmentNode.setAnchor(referencePointAnchor);
+
+        AnchorNode anchorNode = new AnchorNode(referencePointAnchor);
+        anchorNode.setParent(arFragment.getArSceneView().getScene());
+
+        // Create the transformable andy and add it to the anchor.
+        TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
+        andy.setParent(anchorNode);
+        andy.setRenderable(andyRenderable);
+    }
+
+    private boolean isReferencePointActive() {
+        return referencePointAnchor != null;
     }
 
     /**
