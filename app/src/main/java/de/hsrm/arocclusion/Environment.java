@@ -23,4 +23,14 @@ public class Environment {
     public void setReferencePoints(List<ReferencePoint> referencePoints) {
         this.referencePoints = referencePoints;
     }
+
+    public <T extends ReferencePoint> List<T> getReferencePointsWithType(Class<T> clazz) {
+        List<T> filteredList = new ArrayList<>();
+        for (ReferencePoint referencePoint : referencePoints) {
+            if (clazz.isInstance(referencePoint)) {
+                filteredList.add(clazz.cast(referencePoint));
+            }
+        }
+        return filteredList;
+    }
 }

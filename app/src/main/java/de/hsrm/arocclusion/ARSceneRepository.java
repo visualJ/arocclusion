@@ -5,17 +5,22 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 
 public class ARSceneRepository {
 
-    private static Gson gson = new GsonBuilder().create();
+    private static Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(ReferencePoint.class, new ReferencePointDeserializer()).create();
     private final Context context;
     private final File arSceneDir;
 
@@ -65,5 +70,18 @@ public class ARSceneRepository {
 
     private File getSceneFile(String name) {
         return new File(arSceneDir, name);
+    }
+
+    private static class ReferencePointDeserializer implements JsonDeserializer<ReferencePoint> {
+
+        @Override
+        public ReferencePoint deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            String type = json.getAsJsonObject().get("type").getAsString();
+            switch (type) {
+                case ImageReferencePoint.TYPE:
+                    return gson.fromJson(json, ImageReferencePoint.class);
+            }
+            return null;
+        }
     }
 }
