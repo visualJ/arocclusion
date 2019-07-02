@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
     Button toggleProxyMaterialButton;
     @BindView(R.id.new_scene_button)
     Button newSceneButton;
+    @BindView(R.id.scenes_view)
+    ScenesView scenesView;
 
     private ArFragment arFragment;
     private ModelRenderable andyRenderable;
@@ -113,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         arSceneRepository = new ARSceneRepository(this);
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
         arFragment.getArSceneView().getScene().addChild(environmentNode);
+        scenesView.setScenes(arSceneRepository.getARSceneNames());
 
         // When you build a Renderable, Sceneform loads its resources in the background while returning
         // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
