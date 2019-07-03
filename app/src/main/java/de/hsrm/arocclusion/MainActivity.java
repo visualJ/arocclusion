@@ -193,6 +193,15 @@ public class MainActivity extends DaggerAppCompatActivity {
         loadAndActivateScene("test");
     }
 
+    @OnClick(R.id.scenes_panel_button)
+    void onScenesPanelButtonClick(View v) {
+        if (scenesView.getVisibility() == View.VISIBLE) {
+            scenesView.setVisibility(View.GONE);
+        } else {
+            scenesView.setVisibility(View.VISIBLE);
+        }
+    }
+
     @OnClick(R.id.proxy_gen_button)
     void onProxyGenButtonClick(View v) {
         Frame arFrame = arFragment.getArSceneView().getArFrame();
