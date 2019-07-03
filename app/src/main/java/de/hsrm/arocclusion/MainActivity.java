@@ -30,8 +30,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.ar.core.Anchor;
 import com.google.ar.core.AugmentedImage;
 import com.google.ar.core.AugmentedImageDatabase;
@@ -58,17 +56,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import dagger.android.support.DaggerAppCompatActivity;
 
 /**
  * This is an example activity that uses the Sceneform UX package to make common AR tasks easier.
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends DaggerAppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
 
@@ -81,6 +82,9 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.scenes_view)
     ScenesView scenesView;
 
+    @Inject
+    ARSceneRepository arSceneRepository;
+
     private ArFragment arFragment;
     private ModelRenderable andyRenderable;
     private Material proxyMat;
@@ -89,7 +93,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean showProxies = true;
 
     private PoindCloudProxyGenerator poindCloudProxyGenerator = new PoindCloudProxyGenerator();
-    private ARSceneRepository arSceneRepository;
     private ARScene currentScene;
     private ARSubScene currentSubScene;
     private AnchorNode environmentNode = new AnchorNode();
@@ -112,70 +115,29 @@ public class MainActivity extends AppCompatActivity {
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         ButterKnife.bind(this);
 
-        arSceneRepository = new ARSceneRepository(this);
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
         arFragment.getArSceneView().getScene().addChild(environmentNode);
         scenesView.setScenes(arSceneRepository.getARSceneNames());
 
-        // When you build a Renderable, Sceneform loads its resources in the background while returning
-        // a CompletableFuture. Call thenAccept(), handle(), or check isDone() before calling get().
-        ModelRenderable.builder()
-                .setSource(this, R.raw.andy)
-                .build()
-                .thenAccept(renderable -> andyRenderable = renderable)
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load andy renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            throwable.printStackTrace();
-                            return null;
-                        });
+        // add a test scene, if not yet available
+        if (!arSceneRepository.getARSceneNames().contains("test")) {
+            ARScene arScene = new ARScene();
+            arScene.setName("test");
+            arScene.getSubScenes().add(new ARSubScene());
+            arSceneRepository.saveARScene(arScene);
+        }
 
-        ModelRenderable.builder()
-                .setSource(this, R.raw.proxy)
-                .build()
-                .thenAccept(renderable -> {
-                    proxyMat = renderable.getMaterial();
-                    proxyMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
-                })
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load proxy renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            throwable.printStackTrace();
-                            return null;
-                        });
-
-        ModelRenderable.builder()
-                .setSource(this, R.raw.proxy_visual)
-                .build()
-                .thenAccept(renderable -> {
-                    proxyVisualMat = renderable.getMaterial();
-                    proxyVisualMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
-
-                    // add a test scene, if not yet available
-                    // TODO: 27.06.2019 move this somewhere sensible
-                    if (!arSceneRepository.getARSceneNames().contains("test")) {
-                        ARScene arScene = new ARScene();
-                        arScene.setName("test");
-                        arScene.getSubScenes().add(new ARSubScene());
-                        arSceneRepository.saveARScene(arScene);
-                    }
-                    loadAndActivateScene("test");
-                })
-                .exceptionally(
-                        throwable -> {
-                            Toast toast =
-                                    Toast.makeText(this, "Unable to load proxy renderable", Toast.LENGTH_LONG);
-                            toast.setGravity(Gravity.CENTER, 0, 0);
-                            toast.show();
-                            throwable.printStackTrace();
-                            return null;
-                        });
+        loadModelRenderable(R.raw.andy, renderable -> andyRenderable = renderable, "Unable to load andy renderable");
+        loadModelRenderable(R.raw.proxy, renderable -> {
+            proxyMat = renderable.getMaterial();
+            proxyMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
+        }, "Unable to load andy renderable");
+        loadModelRenderable(R.raw.proxy_visual, renderable -> {
+            proxyVisualMat = renderable.getMaterial();
+            proxyVisualMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
+            // TODO: 27.06.2019 move this somewhere sensible
+            loadAndActivateScene("test");
+        }, "Unable to load proxy visual renderable");
 
         arFragment.setOnTapArPlaneListener(
                 (HitResult hitResult, Plane plane, MotionEvent motionEvent) -> {
@@ -196,6 +158,22 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         arFragment.getArSceneView().setCameraStreamRenderPriority(1);
+    }
+
+    private void loadModelRenderable(int resource, Consumer<ModelRenderable> accept, String errorMessage) {
+        ModelRenderable.builder()
+                .setSource(this, resource)
+                .build()
+                .thenAccept(accept)
+                .exceptionally(
+                        throwable -> {
+                            Toast toast =
+                                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG);
+                            toast.setGravity(Gravity.CENTER, 0, 0);
+                            toast.show();
+                            throwable.printStackTrace();
+                            return null;
+                        });
     }
 
     @OnClick(R.id.toggleProxyMaterialButton)
