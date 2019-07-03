@@ -1,9 +1,6 @@
 package de.hsrm.arocclusion;
 
-import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,18 +10,17 @@ import java.util.List;
 public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.ScenesListViewHolder> {
 
     private List<String> scenes;
+    private OnSceneSelectListener onSceneSelectListener;
 
     @NonNull
     @Override
     public ScenesListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        Log.e(getClass().getSimpleName(), "onCreateViewHolder: HIER!");
-        return new ScenesListViewHolder(new TextView(parent.getContext()));
+        return new ScenesListViewHolder(new ScenesListCellView(parent.getContext()));
     }
 
     @Override
     public void onBindViewHolder(@NonNull ScenesListViewHolder holder, int position) {
-        ((TextView) (holder.itemView)).setText(scenes.get(position));
-        Log.e(getClass().getSimpleName(), "onBindViewHolder: HIER!");
+        holder.itemView.getCellText().setText(scenes.get(position));
     }
 
     @Override
@@ -39,14 +35,29 @@ public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.Sc
     public void setScenes(List<String> scenes) {
         this.scenes = scenes;
         notifyDataSetChanged();
-        Log.e(getClass().getSimpleName(), "setScenes: HIER! " + scenes.size());
+    }
+
+    public OnSceneSelectListener getOnSceneSelectListener() {
+        return onSceneSelectListener;
+    }
+
+    public void setOnSceneSelectListener(OnSceneSelectListener onSceneSelectListener) {
+        this.onSceneSelectListener = onSceneSelectListener;
     }
 
     class ScenesListViewHolder extends RecyclerView.ViewHolder {
 
-        public ScenesListViewHolder(@NonNull View itemView) {
-            super(itemView);
+        ScenesListCellView itemView;
+
+        public ScenesListViewHolder(ScenesListCellView view) {
+            super(view);
+            itemView = view;
         }
     }
+
+    interface OnSceneSelectListener {
+        void onSceneSelected(String sceneName);
+    }
+
 
 }

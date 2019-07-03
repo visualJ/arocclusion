@@ -75,7 +75,7 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     @BindView(R.id.proxy_gen_button)
     Button proxyGenButton;
-    @BindView(R.id.toggleProxyMaterialButton)
+    @BindView(R.id.toggle_proxy_material_button)
     Button toggleProxyMaterialButton;
     @BindView(R.id.new_scene_button)
     Button newSceneButton;
@@ -176,7 +176,7 @@ public class MainActivity extends DaggerAppCompatActivity {
                         });
     }
 
-    @OnClick(R.id.toggleProxyMaterialButton)
+    @OnClick(R.id.toggle_proxy_material_button)
     void onToggleProxyMaterialButtonClick(View v) {
         showProxies = !showProxies;
         for (Node proxyNode : proxyNodes) {
