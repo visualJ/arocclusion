@@ -120,8 +120,8 @@ public class MainActivity extends DaggerAppCompatActivity {
         scenesView.setArSceneRepository(arSceneRepository);
         scenesView.setScenesViewCallback(new ScenesView.ScenesViewCallback() {
             @Override
-            public void onSceneSelect(ARScene scene) {
-
+            public void onSceneSelect(String scene) {
+                loadAndActivateScene(scene);
             }
         });
 

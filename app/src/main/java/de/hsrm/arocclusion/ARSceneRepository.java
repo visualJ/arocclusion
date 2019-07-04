@@ -69,6 +69,8 @@ public class ARSceneRepository {
     public ARScene newARScene(String name) {
         ARScene arScene = new ARScene();
         arScene.setName(name);
+        ARSubScene subScene = new ARSubScene();
+        arScene.getSubScenes().add(subScene);
         return arScene;
     }
 

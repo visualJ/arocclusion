@@ -47,7 +47,9 @@ public class ScenesView extends ConstraintLayout {
         scenesListAdapter.setSceneInteractionListener(new ScenesListAdapter.SceneInteractionListener() {
             @Override
             public void onSceneSelected(String sceneName) {
-
+                if (scenesViewCallback != null) {
+                    scenesViewCallback.onSceneSelect(sceneName);
+                }
             }
 
             @Override
@@ -72,6 +74,7 @@ public class ScenesView extends ConstraintLayout {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Name der neuen Szene");
         final EditText input = new EditText(getContext());
+        input.requestFocus();
         builder.setView(input);
         builder.setPositiveButton("OK", (dialog, which) -> callback.accept(input.getText().toString()));
         builder.setNegativeButton("Abbrechen", (dialog, which) -> dialog.cancel());
@@ -104,7 +107,7 @@ public class ScenesView extends ConstraintLayout {
     }
 
     interface ScenesViewCallback {
-        void onSceneSelect(ARScene scene);
+        void onSceneSelect(String scene);
     }
 
 }
