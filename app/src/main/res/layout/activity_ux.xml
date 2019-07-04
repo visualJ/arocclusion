@@ -48,31 +48,24 @@
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent" />
 
-  <Button
-      android:id="@+id/new_scene_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:text="Neue Szene"
-      app:layout_constraintStart_toEndOf="@id/toggle_proxy_material_button"
-      app:layout_constraintTop_toTopOf="parent" />
-
   <de.hsrm.arocclusion.ScenesView
       android:id="@+id/scenes_view"
       android:layout_width="0dp"
-      android:layout_height="400dp"
+      android:layout_height="0dp"
       android:layout_marginTop="50dp"
-      android:visibility="gone"
+      android:visibility="invisible"
       tools:visibility="visible"
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toTopOf="parent" />
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintBottom_toBottomOf="parent" />
 
   <Button
       android:id="@+id/scenes_panel_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:text="Szenenauswahl"
-      app:layout_constraintStart_toEndOf="@+id/new_scene_button"
+      app:layout_constraintStart_toEndOf="@+id/toggle_proxy_material_button"
       app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,7 +4,7 @@ public class ARSubScene {
 
     private VirtualScene virtualScene;
     private Environment environment;
-    private String name;
+    private String name = "ARSubScene";
 
     public ARSubScene() {
         this(new VirtualScene(), new Environment());

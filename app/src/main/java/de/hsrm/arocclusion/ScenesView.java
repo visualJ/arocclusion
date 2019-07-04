@@ -13,6 +13,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.IOException;
 import java.util.List;
 
 import butterknife.BindView;
@@ -27,7 +28,14 @@ public class ScenesView extends ConstraintLayout {
     @BindView(R.id.new_scene_button)
     Button newSceneButton;
 
+    @BindView(R.id.subscenes_list)
+    RecyclerView subScenesList;
+
+    @BindView(R.id.new_subscene_button)
+    Button newSubsceneButton;
+
     private ScenesListAdapter scenesListAdapter = new ScenesListAdapter();
+    private SubscenesListAdapter subscenesListAdapter = new SubscenesListAdapter();
     private ARSceneRepository arSceneRepository;
     private ScenesViewCallback scenesViewCallback;
 
@@ -50,12 +58,29 @@ public class ScenesView extends ConstraintLayout {
                 if (scenesViewCallback != null) {
                     scenesViewCallback.onSceneSelect(sceneName);
                 }
+                try {
+                    subscenesListAdapter.setSubScenes(arSceneRepository.getARScene(sceneName).getSubScenes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
             public void onSceneDeleted(String sceneName) {
                 arSceneRepository.deleteARScene(sceneName);
                 refresh();
+            }
+        });
+        subScenesList.setAdapter(subscenesListAdapter);
+        subscenesListAdapter.setSubsceneInteractionListener(new SubscenesListAdapter.SubsceneInteractionListener() {
+            @Override
+            public void onSubsceneSelected(ARSubScene sceneName) {
+
+            }
+
+            @Override
+            public void onSubsceneDeleted(ARSubScene sceneName) {
+
             }
         });
     }
@@ -108,6 +133,8 @@ public class ScenesView extends ConstraintLayout {
 
     interface ScenesViewCallback {
         void onSceneSelect(String scene);
+
+        void onSubsceneSelect(ARSubScene subScene);
     }
 
 }

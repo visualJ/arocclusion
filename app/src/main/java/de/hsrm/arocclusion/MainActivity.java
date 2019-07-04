@@ -77,8 +77,6 @@ public class MainActivity extends DaggerAppCompatActivity {
     Button proxyGenButton;
     @BindView(R.id.toggle_proxy_material_button)
     Button toggleProxyMaterialButton;
-    @BindView(R.id.new_scene_button)
-    Button newSceneButton;
     @BindView(R.id.scenes_view)
     ScenesView scenesView;
 
@@ -123,6 +121,11 @@ public class MainActivity extends DaggerAppCompatActivity {
             public void onSceneSelect(String scene) {
                 loadAndActivateScene(scene);
             }
+
+            @Override
+            public void onSubsceneSelect(ARSubScene subScene) {
+                activateSubScene(subScene);
+            }
         });
 
         // add a test scene, if not yet available
@@ -141,8 +144,6 @@ public class MainActivity extends DaggerAppCompatActivity {
         loadModelRenderable(R.raw.proxy_visual, renderable -> {
             proxyVisualMat = renderable.getMaterial();
             proxyVisualMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
-            // TODO: 27.06.2019 move this somewhere sensible
-            loadAndActivateScene("test");
         }, "Unable to load proxy visual renderable");
 
         arFragment.setOnTapArPlaneListener(
@@ -190,19 +191,10 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
     }
 
-    @OnClick(R.id.new_scene_button)
-    void onNewSceneButtonClick(View v) {
-        ARScene arScene = new ARScene();
-        arScene.setName("test");
-        arScene.getSubScenes().add(new ARSubScene());
-        arSceneRepository.saveARScene(arScene);
-        loadAndActivateScene("test");
-    }
-
     @OnClick(R.id.scenes_panel_button)
     void onScenesPanelButtonClick(View v) {
         if (scenesView.getVisibility() == View.VISIBLE) {
-            scenesView.setVisibility(View.GONE);
+            scenesView.setVisibility(View.INVISIBLE);
         } else {
             scenesView.setVisibility(View.VISIBLE);
         }
@@ -210,6 +202,11 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     @OnClick(R.id.proxy_gen_button)
     void onProxyGenButtonClick(View v) {
+        if (currentSubScene == null) {
+            Toast.makeText(this, "Keine Subszene ausgewählt!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         Frame arFrame = arFragment.getArSceneView().getArFrame();
         if (arFrame != null) {
             ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame, referencePointAnchor);
