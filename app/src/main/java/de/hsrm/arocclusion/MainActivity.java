@@ -117,7 +117,13 @@ public class MainActivity extends DaggerAppCompatActivity {
 
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
         arFragment.getArSceneView().getScene().addChild(environmentNode);
-        scenesView.setScenes(arSceneRepository.getARSceneNames());
+        scenesView.setArSceneRepository(arSceneRepository);
+        scenesView.setScenesViewCallback(new ScenesView.ScenesViewCallback() {
+            @Override
+            public void onSceneSelect(ARScene scene) {
+
+            }
+        });
 
         // add a test scene, if not yet available
         if (!arSceneRepository.getARSceneNames().contains("test")) {

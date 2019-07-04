@@ -10,7 +10,7 @@ import java.util.List;
 public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.ScenesListViewHolder> {
 
     private List<String> scenes;
-    private OnSceneSelectListener onSceneSelectListener;
+    private SceneInteractionListener sceneInteractionListener;
 
     @NonNull
     @Override
@@ -21,6 +21,16 @@ public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.Sc
     @Override
     public void onBindViewHolder(@NonNull ScenesListViewHolder holder, int position) {
         holder.itemView.getCellText().setText(scenes.get(position));
+        holder.itemView.getCellText().setOnClickListener(v -> {
+            if (sceneInteractionListener != null) {
+                sceneInteractionListener.onSceneSelected(scenes.get(position));
+            }
+        });
+        holder.itemView.getDeleteButton().setOnClickListener(v -> {
+            if (sceneInteractionListener != null) {
+                sceneInteractionListener.onSceneDeleted(scenes.get(position));
+            }
+        });
     }
 
     @Override
@@ -37,12 +47,12 @@ public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.Sc
         notifyDataSetChanged();
     }
 
-    public OnSceneSelectListener getOnSceneSelectListener() {
-        return onSceneSelectListener;
+    public SceneInteractionListener getSceneInteractionListener() {
+        return sceneInteractionListener;
     }
 
-    public void setOnSceneSelectListener(OnSceneSelectListener onSceneSelectListener) {
-        this.onSceneSelectListener = onSceneSelectListener;
+    public void setSceneInteractionListener(SceneInteractionListener onSceneSelectListener) {
+        this.sceneInteractionListener = onSceneSelectListener;
     }
 
     class ScenesListViewHolder extends RecyclerView.ViewHolder {
@@ -55,9 +65,10 @@ public class ScenesListAdapter extends RecyclerView.Adapter<ScenesListAdapter.Sc
         }
     }
 
-    interface OnSceneSelectListener {
+    interface SceneInteractionListener {
         void onSceneSelected(String sceneName);
-    }
 
+        void onSceneDeleted(String sceneName);
+    }
 
 }

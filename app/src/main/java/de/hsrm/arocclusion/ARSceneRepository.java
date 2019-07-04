@@ -36,7 +36,6 @@ public class ARSceneRepository {
     }
 
     public ARScene getARScene(String name) throws IOException {
-        // TODO: 24.06.2019 implement
         File sceneFile = getSceneFile(name);
         try (FileReader reader = new FileReader(sceneFile)) {
             return gson.fromJson(reader, ARScene.class);
@@ -48,7 +47,6 @@ public class ARSceneRepository {
     }
 
     public void saveARScene(ARScene scene) {
-        // TODO: 24.06.2019 implement
         String json = gson.toJson(scene);
         File sceneFile = getSceneFile(scene);
         try (FileWriter writer = new FileWriter(sceneFile)) {
@@ -59,9 +57,19 @@ public class ARSceneRepository {
     }
 
     public void deleteARScene(ARScene scene) {
-        // TODO: 27.06.2019 implement
         File sceneFile = getSceneFile(scene);
         sceneFile.delete();
+    }
+
+    public void deleteARScene(String name) {
+        File sceneFile = getSceneFile(name);
+        sceneFile.delete();
+    }
+
+    public ARScene newARScene(String name) {
+        ARScene arScene = new ARScene();
+        arScene.setName(name);
+        return arScene;
     }
 
     private File getSceneFile(ARScene scene) {
