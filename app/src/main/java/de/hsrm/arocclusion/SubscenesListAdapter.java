@@ -66,9 +66,9 @@ public class SubscenesListAdapter extends RecyclerView.Adapter<SubscenesListAdap
     }
 
     interface SubsceneInteractionListener {
-        void onSubsceneSelected(ARSubScene sceneName);
+        void onSubsceneSelected(ARSubScene scene);
 
-        void onSubsceneDeleted(ARSubScene sceneName);
+        void onSubsceneDeleted(ARSubScene scene);
     }
 
 }

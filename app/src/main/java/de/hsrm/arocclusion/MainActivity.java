@@ -118,8 +118,8 @@ public class MainActivity extends DaggerAppCompatActivity {
         scenesView.setArSceneRepository(arSceneRepository);
         scenesView.setScenesViewCallback(new ScenesView.ScenesViewCallback() {
             @Override
-            public void onSceneSelect(String scene) {
-                loadAndActivateScene(scene);
+            public void onSceneSelect(ARScene scene) {
+                activateScene(scene);
             }
 
             @Override
@@ -132,7 +132,7 @@ public class MainActivity extends DaggerAppCompatActivity {
         if (!arSceneRepository.getARSceneNames().contains("test")) {
             ARScene arScene = new ARScene();
             arScene.setName("test");
-            arScene.getSubScenes().add(new ARSubScene());
+            arScene.getSubScenes().add(new ARSubScene("ARSubScene"));
             arSceneRepository.saveARScene(arScene);
         }
 
@@ -254,15 +254,10 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
     }
 
-    private void loadAndActivateScene(String name) {
-        try {
-            currentScene = arSceneRepository.getARScene(name);
-            setupImageReferencePointRecognition(currentScene);
-            activateSubScene(currentScene.hasSubScenes() ? currentScene.getSubScenes().get(0) : null);
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e(TAG, "loadAndActivateScene: could not load ar scene " + name);
-        }
+    private void activateScene(ARScene scene) {
+        currentScene = scene;
+        setupImageReferencePointRecognition(currentScene);
+        activateSubScene(currentScene.hasSubScenes() ? currentScene.getSubScenes().get(0) : null);
     }
 
     private void removeProxiesFromScenegraph() {

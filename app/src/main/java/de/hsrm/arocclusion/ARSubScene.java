@@ -4,13 +4,18 @@ public class ARSubScene {
 
     private VirtualScene virtualScene;
     private Environment environment;
-    private String name = "ARSubScene";
+    private String name;
 
     public ARSubScene() {
-        this(new VirtualScene(), new Environment());
+        this("ARSubscene");
     }
 
-    public ARSubScene(VirtualScene virtualScene, Environment environment) {
+    public ARSubScene(String name) {
+        this(name, new VirtualScene(), new Environment());
+    }
+
+    public ARSubScene(String name, VirtualScene virtualScene, Environment environment) {
+        this.name = name;
         this.virtualScene = virtualScene;
         this.environment = environment;
     }

@@ -14,6 +14,7 @@ import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.List;
 
 import butterknife.BindView;
@@ -38,6 +39,7 @@ public class ScenesView extends ConstraintLayout {
     private SubscenesListAdapter subscenesListAdapter = new SubscenesListAdapter();
     private ARSceneRepository arSceneRepository;
     private ScenesViewCallback scenesViewCallback;
+    private ARScene currentScene;
 
     public ScenesView(Context context) {
         this(context, null);
@@ -56,48 +58,72 @@ public class ScenesView extends ConstraintLayout {
             @Override
             public void onSceneSelected(String sceneName) {
                 if (scenesViewCallback != null) {
-                    scenesViewCallback.onSceneSelect(sceneName);
-                }
-                try {
-                    subscenesListAdapter.setSubScenes(arSceneRepository.getARScene(sceneName).getSubScenes());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    try {
+                        currentScene = arSceneRepository.getARScene(sceneName);
+                        refreshSubscenes();
+                        scenesViewCallback.onSceneSelect(currentScene);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
             @Override
             public void onSceneDeleted(String sceneName) {
                 arSceneRepository.deleteARScene(sceneName);
-                refresh();
+                refreshScenes();
             }
         });
         subScenesList.setAdapter(subscenesListAdapter);
         subscenesListAdapter.setSubsceneInteractionListener(new SubscenesListAdapter.SubsceneInteractionListener() {
             @Override
-            public void onSubsceneSelected(ARSubScene sceneName) {
-
+            public void onSubsceneSelected(ARSubScene scene) {
+                if (scenesViewCallback != null) {
+                    scenesViewCallback.onSubsceneSelect(scene);
+                }
             }
 
             @Override
-            public void onSubsceneDeleted(ARSubScene sceneName) {
-
+            public void onSubsceneDeleted(ARSubScene scene) {
+                if (currentScene != null) {
+                    currentScene.getSubScenes().remove(scene);
+                    refreshSubscenes();
+                }
             }
         });
+    }
+
+    private void refreshSubscenes() {
+        if (currentScene != null) {
+            subscenesListAdapter.setSubScenes(currentScene.getSubScenes());
+        }
     }
 
     @OnClick(R.id.new_scene_button)
     void onNewSceneButtonClick(View view) {
-        getSceneName(sceneName -> {
-            Toast.makeText(getContext(), sceneName, Toast.LENGTH_LONG).show();
+        stringDialog("Name der neuen Szene", sceneName -> {
+            Toast.makeText(getContext(), MessageFormat.format("Szene erstellt: {0}", sceneName), Toast.LENGTH_LONG).show();
             ARScene arScene = arSceneRepository.newARScene(sceneName);
             arSceneRepository.saveARScene(arScene);
-            refresh();
+            refreshScenes();
         });
     }
 
-    private void getSceneName(Consumer<String> callback) {
+    @OnClick(R.id.new_subscene_button)
+    void onNewSubsceneButtonClick(View view) {
+        if (currentScene != null) {
+            stringDialog("Name der neuen Subszene", subsceneName -> {
+                Toast.makeText(getContext(), MessageFormat.format("Subszene erstellt: {0}", subsceneName), Toast.LENGTH_LONG).show();
+                currentScene.getSubScenes().add(new ARSubScene(subsceneName));
+                arSceneRepository.saveARScene(currentScene);
+                refreshSubscenes();
+            });
+        }
+    }
+
+    private void stringDialog(String title, Consumer<String> callback) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle("Name der neuen Szene");
+        builder.setTitle(title);
         final EditText input = new EditText(getContext());
         input.requestFocus();
         builder.setView(input);
@@ -116,10 +142,10 @@ public class ScenesView extends ConstraintLayout {
 
     public void setArSceneRepository(ARSceneRepository arSceneRepository) {
         this.arSceneRepository = arSceneRepository;
-        refresh();
+        refreshScenes();
     }
 
-    private void refresh() {
+    private void refreshScenes() {
         setScenes(arSceneRepository.getARSceneNames());
     }
 
@@ -131,8 +157,12 @@ public class ScenesView extends ConstraintLayout {
         this.scenesViewCallback = scenesViewCallback;
     }
 
+    public ARScene getCurrentScene() {
+        return currentScene;
+    }
+
     interface ScenesViewCallback {
-        void onSceneSelect(String scene);
+        void onSceneSelect(ARScene scene);
 
         void onSubsceneSelect(ARSubScene subScene);
     }
