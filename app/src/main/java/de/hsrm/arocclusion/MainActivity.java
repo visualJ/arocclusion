@@ -20,6 +20,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
@@ -303,18 +304,20 @@ public class MainActivity extends DaggerAppCompatActivity {
     }
 
     private void setupImageReferencePointRecognition(ARScene scene) {
-        // TODO: 28.06.2019 add all images from the scenes reference points
-        Session session = arFragment.getArSceneView().getSession();
-        Config config = Objects.requireNonNull(session).getConfig();
-        AugmentedImageDatabase augmentedImageDatabase = new AugmentedImageDatabase(session);
-        try (InputStream is = getAssets().open("default_marker.jpg")) {
-            Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
-            augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
-        } catch (IOException e) {
-            Log.e(TAG, "IO exception loading augmented image bitmap.", e);
-        }
-        config.setAugmentedImageDatabase(augmentedImageDatabase);
-        session.configure(config);
+        AsyncTask.execute(() -> {
+            // TODO: 28.06.2019 add all images from the scenes reference points
+            Session session = arFragment.getArSceneView().getSession();
+            Config config = Objects.requireNonNull(session).getConfig();
+            AugmentedImageDatabase augmentedImageDatabase = new AugmentedImageDatabase(session);
+            try (InputStream is = getAssets().open("default_marker.jpg")) {
+                Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
+                augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
+            } catch (IOException e) {
+                Log.e(TAG, "IO exception loading augmented image bitmap.", e);
+            }
+            config.setAugmentedImageDatabase(augmentedImageDatabase);
+            session.configure(config);
+        });
     }
 
     private void imageReferencePointDetected(AugmentedImage image) {
