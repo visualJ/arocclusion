@@ -1,6 +1,7 @@
 package de.hsrm.arocclusion;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -53,6 +54,7 @@ public class ScenesView extends ConstraintLayout {
         super(context, attrs, defStyleAttr);
         LayoutInflater.from(context).inflate(R.layout.view_scenes, this, true);
         ButterKnife.bind(this);
+        setBackgroundColor(Color.parseColor("#1A1A1A"));
         scenesList.setAdapter(scenesListAdapter);
         scenesListAdapter.setSceneInteractionListener(new ScenesListAdapter.SceneInteractionListener() {
             @Override
@@ -106,6 +108,7 @@ public class ScenesView extends ConstraintLayout {
             ARScene arScene = arSceneRepository.newARScene(sceneName);
             arSceneRepository.saveARScene(arScene);
             refreshScenes();
+            refreshSubscenes();
         });
     }
 

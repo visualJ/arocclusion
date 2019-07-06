@@ -20,7 +20,10 @@ import java.util.List;
 
 public class ARSceneRepository {
 
-    private static Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(ReferencePoint.class, new ReferencePointDeserializer()).create();
+    private static Gson gson = new GsonBuilder()
+            .registerTypeHierarchyAdapter(ReferencePoint.class, new ReferencePointDeserializer())
+            .setPrettyPrinting()
+            .create();
     private final Context context;
     private final File arSceneDir;
 
@@ -56,20 +59,27 @@ public class ARSceneRepository {
         }
     }
 
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
+
+        fileOrDirectory.delete();
+    }
+
     public void deleteARScene(ARScene scene) {
-        File sceneFile = getSceneFile(scene);
-        sceneFile.delete();
+        deleteARScene(scene.getName());
     }
 
     public void deleteARScene(String name) {
-        File sceneFile = getSceneFile(name);
-        sceneFile.delete();
+        File sceneDir = getSceneDirectory(name);
+        deleteRecursive(sceneDir);
     }
 
     public ARScene newARScene(String name) {
         ARScene arScene = new ARScene();
         arScene.setName(name);
-        ARSubScene subScene = new ARSubScene("ARSubScene");
+        ARSubScene subScene = new ARSubScene();
         arScene.getSubScenes().add(subScene);
         return arScene;
     }
@@ -79,7 +89,14 @@ public class ARSceneRepository {
     }
 
     private File getSceneFile(String name) {
-        return new File(arSceneDir, name);
+//        return new File(arSceneDir, name);
+        return new File(getSceneDirectory(name), "scene.json");
+    }
+
+    private File getSceneDirectory(String name) {
+        File dir = new File(arSceneDir, name);
+        dir.mkdirs();
+        return dir;
     }
 
     private static class ReferencePointDeserializer implements JsonDeserializer<ReferencePoint> {
