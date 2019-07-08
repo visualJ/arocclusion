@@ -18,6 +18,8 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 
+import de.hsrm.arocclusion.util.FileUtil;
+
 public class ARSceneRepository {
 
     private static Gson gson = new GsonBuilder()
@@ -59,21 +61,13 @@ public class ARSceneRepository {
         }
     }
 
-    private void deleteRecursive(File fileOrDirectory) {
-        if (fileOrDirectory.isDirectory())
-            for (File child : fileOrDirectory.listFiles())
-                deleteRecursive(child);
-
-        fileOrDirectory.delete();
-    }
-
     public void deleteARScene(ARScene scene) {
         deleteARScene(scene.getName());
     }
 
     public void deleteARScene(String name) {
         File sceneDir = getSceneDirectory(name);
-        deleteRecursive(sceneDir);
+        FileUtil.deleteRecursive(sceneDir);
     }
 
     public ARScene newARScene(String name) {
@@ -89,12 +83,17 @@ public class ARSceneRepository {
     }
 
     private File getSceneFile(String name) {
-//        return new File(arSceneDir, name);
         return new File(getSceneDirectory(name), "scene.json");
     }
 
     private File getSceneDirectory(String name) {
         File dir = new File(arSceneDir, name);
+        dir.mkdirs();
+        return dir;
+    }
+
+    private File getReferenceImageDirectory(String name) {
+        File dir = new File(getSceneDirectory(name), "reference_images");
         dir.mkdirs();
         return dir;
     }
