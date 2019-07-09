@@ -43,7 +43,11 @@ public class ARSceneRepository {
     public ARScene getARScene(String name) throws IOException {
         File sceneFile = getSceneFile(name);
         try (FileReader reader = new FileReader(sceneFile)) {
-            return gson.fromJson(reader, ARScene.class);
+            ARScene arScene = gson.fromJson(reader, ARScene.class);
+            // gson does not use the setter, so we use it here manually. The setter ensures
+            // that  subscenes know their parent scene
+            arScene.setSubScenes(arScene.getSubScenes());
+            return arScene;
         }
     }
 
@@ -74,7 +78,7 @@ public class ARSceneRepository {
         ARScene arScene = new ARScene();
         arScene.setName(name);
         ARSubScene subScene = new ARSubScene();
-        arScene.getSubScenes().add(subScene);
+        arScene.addSubscene(subScene);
         return arScene;
     }
 
@@ -82,23 +86,25 @@ public class ARSceneRepository {
         return getSceneFile(scene.getName());
     }
 
-    private File getSceneFile(String name) {
-        return new File(getSceneDirectory(name), "scene.json");
+    private File getSceneFile(String sceneName) {
+        return new File(getSceneDirectory(sceneName), "scene.json");
     }
 
-    private File getSceneDirectory(String name) {
-        File dir = new File(arSceneDir, name);
+    private File getSceneDirectory(String sceneName) {
+        File dir = new File(arSceneDir, sceneName);
         dir.mkdirs();
         return dir;
     }
 
-    private File getReferenceImageDirectory(String name) {
-        File dir = new File(getSceneDirectory(name), "reference_images");
+    public File getReferenceImageDirectory(String sceneName) {
+        File dir = new File(getSceneDirectory(sceneName), "reference_images");
         dir.mkdirs();
         return dir;
     }
 
     private static class ReferencePointDeserializer implements JsonDeserializer<ReferencePoint> {
+
+        private Gson gson = new Gson();
 
         @Override
         public ReferencePoint deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
@@ -110,4 +116,5 @@ public class ARSceneRepository {
             return null;
         }
     }
+
 }

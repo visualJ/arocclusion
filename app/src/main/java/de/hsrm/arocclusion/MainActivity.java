@@ -15,21 +15,29 @@
  */
 package de.hsrm.arocclusion;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.AugmentedImage;
@@ -73,6 +81,8 @@ import dagger.android.support.DaggerAppCompatActivity;
 public class MainActivity extends DaggerAppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
+    public static final int ACTIVITY_SELECT_IMAGE = 1;
+    private static final int READ_STORAGE_PERMISSION_REQUEST_CODE = 1;
 
     @BindView(R.id.proxy_gen_button)
     Button proxyGenButton;
@@ -80,6 +90,8 @@ public class MainActivity extends DaggerAppCompatActivity {
     Button toggleProxyMaterialButton;
     @BindView(R.id.scenes_view)
     ScenesView scenesView;
+    @BindView(R.id.subscene_detail_view)
+    SubsceneDetailView subsceneDetailView;
 
     @Inject
     ARSceneRepository arSceneRepository;
@@ -114,6 +126,10 @@ public class MainActivity extends DaggerAppCompatActivity {
         arFragment = (ArFragment) getSupportFragmentManager().findFragmentById(R.id.ux_fragment);
         ButterKnife.bind(this);
 
+        if (!checkPermissionForReadExtertalStorage()) {
+            requestPermissionForReadExtertalStorage();
+        }
+
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
         arFragment.getArSceneView().getScene().addChild(environmentNode);
         scenesView.setArSceneRepository(arSceneRepository);
@@ -128,14 +144,15 @@ public class MainActivity extends DaggerAppCompatActivity {
                 activateSubScene(subScene);
             }
         });
+        subsceneDetailView.setArSceneRepository(arSceneRepository);
 
         // add a test scene, if not yet available
-        if (!arSceneRepository.getARSceneNames().contains("test")) {
-            ARScene arScene = new ARScene();
-            arScene.setName("test");
-            arScene.getSubScenes().add(new ARSubScene("ARSubScene"));
-            arSceneRepository.saveARScene(arScene);
-        }
+//        if (!arSceneRepository.getARSceneNames().contains("test")) {
+//            ARScene arScene = new ARScene();
+//            arScene.setName("test");
+//            arScene.addSubscene(new ARSubScene("ARSubScene"));
+//            arSceneRepository.saveARScene(arScene);
+//        }
 
         loadModelRenderable(R.raw.andy, renderable -> andyRenderable = renderable, "Unable to load andy renderable");
         loadModelRenderable(R.raw.proxy, renderable -> {
@@ -201,6 +218,15 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
     }
 
+    @OnClick(R.id.subscene_detail_button)
+    void onSubsceneDetailButtonClick(View v) {
+        if (subsceneDetailView.getVisibility() == View.VISIBLE) {
+            subsceneDetailView.setVisibility(View.INVISIBLE);
+        } else {
+            subsceneDetailView.setVisibility(View.VISIBLE);
+        }
+    }
+
     @OnClick(R.id.proxy_gen_button)
     void onProxyGenButtonClick(View v) {
         if (currentSubScene == null) {
@@ -221,8 +247,34 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
     }
 
+    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
+
+        switch (requestCode) {
+            case ACTIVITY_SELECT_IMAGE:
+                if (resultCode == RESULT_OK) {
+                    Uri selectedImage = Objects.requireNonNull(imageReturnedIntent.getData());
+                    String[] filePathColumn = {MediaStore.Images.Media.DATA};
+
+                    Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
+                    cursor.moveToFirst();
+
+                    int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                    String filePath = cursor.getString(columnIndex);
+                    cursor.close();
+
+                    Toast.makeText(this, filePath, Toast.LENGTH_LONG).show();
+
+                    subsceneDetailView.addImageReferencePoint(filePath);
+
+//                    Bitmap image = BitmapFactory.decodeFile(filePath);
+                }
+        }
+    }
+
     private void activateSubScene(@Nullable ARSubScene subScene) {
         currentSubScene = subScene;
+        subsceneDetailView.setCurrentSubScene(subScene);
         removeProxiesFromScenegraph();
         if (subScene != null) {
             for (ProxyModel proxyModel : currentSubScene.getEnvironment().getProxies()) {
@@ -368,5 +420,19 @@ public class MainActivity extends DaggerAppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    public boolean checkPermissionForReadExtertalStorage() {
+        int result = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
+        return result == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public void requestPermissionForReadExtertalStorage() {
+        try {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    READ_STORAGE_PERMISSION_REQUEST_CODE);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

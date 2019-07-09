@@ -61,6 +61,7 @@ public class ScenesView extends ConstraintLayout {
             public void onSceneSelected(String sceneName) {
                 if (scenesViewCallback != null) {
                     try {
+                        Toast.makeText(getContext(), MessageFormat.format("Szene {0} aktiviert", sceneName), Toast.LENGTH_LONG).show();
                         currentScene = arSceneRepository.getARScene(sceneName);
                         refreshSubscenes();
                         scenesViewCallback.onSceneSelect(currentScene);
@@ -88,7 +89,7 @@ public class ScenesView extends ConstraintLayout {
             @Override
             public void onSubsceneDeleted(ARSubScene scene) {
                 if (currentScene != null) {
-                    currentScene.getSubScenes().remove(scene);
+                    currentScene.removeSubscene(scene);
                     refreshSubscenes();
                 }
             }
@@ -117,7 +118,7 @@ public class ScenesView extends ConstraintLayout {
         if (currentScene != null) {
             stringDialog("Name der neuen Subszene", subsceneName -> {
                 Toast.makeText(getContext(), MessageFormat.format("Subszene erstellt: {0}", subsceneName), Toast.LENGTH_LONG).show();
-                currentScene.getSubScenes().add(new ARSubScene(subsceneName));
+                currentScene.addSubscene(new ARSubScene(subsceneName));
                 arSceneRepository.saveARScene(currentScene);
                 refreshSubscenes();
             });

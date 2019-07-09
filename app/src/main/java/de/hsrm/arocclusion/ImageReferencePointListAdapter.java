@@ -5,11 +5,12 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ImageReferencePointListAdapter extends RecyclerView.Adapter<ImageReferencePointListAdapter.ScenesListViewHolder> {
 
-    private List<ImageReferencePoint> referencePoints;
+    private List<ImageReferencePoint> referencePoints = new ArrayList<>();
     private ImageReferencePointInteractionListener imageReferencePointInteractionListener;
 
     @NonNull

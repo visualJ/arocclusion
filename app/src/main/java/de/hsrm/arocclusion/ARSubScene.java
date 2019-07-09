@@ -5,6 +5,7 @@ public class ARSubScene {
     private VirtualScene virtualScene;
     private Environment environment;
     private String name;
+    private transient ARScene parent;
 
     public ARSubScene() {
         this("ARSubscene");
@@ -42,5 +43,13 @@ public class ARSubScene {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ARScene getParent() {
+        return parent;
+    }
+
+    public void setParent(ARScene parent) {
+        this.parent = parent;
     }
 }
