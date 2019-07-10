@@ -29,6 +29,10 @@ public class ARScene {
         }
     }
 
+    public void runPostDeserializationProcessing() {
+        setSubScenes(subScenes);
+    }
+
     public void addSubscene(ARSubScene subScene) {
         subScene.setParent(this);
         subScenes.add(subScene);

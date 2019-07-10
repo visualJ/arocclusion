@@ -44,9 +44,9 @@ public class ARSceneRepository {
         File sceneFile = getSceneFile(name);
         try (FileReader reader = new FileReader(sceneFile)) {
             ARScene arScene = gson.fromJson(reader, ARScene.class);
-            // gson does not use the setter, so we use it here manually. The setter ensures
-            // that  subscenes know their parent scene
-            arScene.setSubScenes(arScene.getSubScenes());
+            // gson does not use the setters, so wen need to run some post processing to make sure
+            // the scene is in a consistent state
+            arScene.runPostDeserializationProcessing();
             return arScene;
         }
     }
@@ -100,6 +100,10 @@ public class ARSceneRepository {
         File dir = new File(getSceneDirectory(sceneName), "reference_images");
         dir.mkdirs();
         return dir;
+    }
+
+    public File getImageReferencePointFile(ARScene scene, ImageReferencePoint imageReferencePoint) {
+        return new File(getReferenceImageDirectory(scene.getName()), imageReferencePoint.getFileName());
     }
 
     private static class ReferencePointDeserializer implements JsonDeserializer<ReferencePoint> {
