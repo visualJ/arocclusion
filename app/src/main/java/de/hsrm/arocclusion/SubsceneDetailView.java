@@ -56,6 +56,7 @@ public class SubsceneDetailView extends ConstraintLayout {
                 File file = arSceneRepository.getImageReferencePointFile(scene, imageReferencePoint);
                 file.delete();
                 currentSubScene.getEnvironment().getReferencePoints().remove(imageReferencePoint);
+                arSceneRepository.saveARScene(scene);
                 refreshReferencePointList();
             }
         });

@@ -57,8 +57,6 @@ import com.google.ar.sceneform.rendering.RenderableDefinition;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -66,6 +64,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -361,12 +360,20 @@ public class MainActivity extends DaggerAppCompatActivity {
             Session session = arFragment.getArSceneView().getSession();
             Config config = Objects.requireNonNull(session).getConfig();
             AugmentedImageDatabase augmentedImageDatabase = new AugmentedImageDatabase(session);
-            try (InputStream is = getAssets().open("default_marker.jpg")) {
-                Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
-                augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
-            } catch (IOException e) {
-                Log.e(TAG, "IO exception loading augmented image bitmap.", e);
-            }
+            Stream<ImageReferencePoint> referencePoints = scene.getSubScenes().stream()
+                    .flatMap(subScene -> subScene.getEnvironment().getReferencePointsWithType(ImageReferencePoint.class).stream());
+            referencePoints.forEach(referencePoint -> {
+                String path = arSceneRepository.getImageReferencePointFile(scene, referencePoint).getPath();
+                Log.d(TAG, "setupImageReferencePointRecognition: " + path);
+                Bitmap augmentedImageBitmap = BitmapFactory.decodeFile(path);
+                augmentedImageDatabase.addImage(referencePoint.getFileName(), augmentedImageBitmap);
+            });
+//            try (InputStream is = getAssets().open("default_marker.jpg")) {
+//                Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
+//                augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
+//            } catch (IOException e) {
+//                Log.e(TAG, "IO exception loading augmented image bitmap.", e);
+//            }
             config.setAugmentedImageDatabase(augmentedImageDatabase);
             session.configure(config);
         });
