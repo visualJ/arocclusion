@@ -3,6 +3,7 @@ package de.hsrm.arocclusion;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class ARScene {
 
@@ -49,5 +50,14 @@ public class ARScene {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ImageReferencePoint getImageReferencePoint(String fileName) {
+        Optional<ImageReferencePoint> imageReferencePoint = subScenes.stream()
+                .map(ARSubScene::getEnvironment)
+                .flatMap(environment -> environment.getReferencePointsWithType(ImageReferencePoint.class).stream())
+                .filter(imageReferencePoint1 -> imageReferencePoint1.getFileName().equals(fileName))
+                .findFirst();
+        return imageReferencePoint.orElse(null);
     }
 }

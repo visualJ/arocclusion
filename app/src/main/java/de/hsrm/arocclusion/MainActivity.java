@@ -59,10 +59,8 @@ import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -105,9 +103,10 @@ public class MainActivity extends DaggerAppCompatActivity {
     private PoindCloudProxyGenerator poindCloudProxyGenerator = new PoindCloudProxyGenerator();
     private ARScene currentScene;
     private ARSubScene currentSubScene;
+    private ReferencePoint currentReferencePoint;
     private AnchorNode environmentNode = new AnchorNode();
 
-    private Set<AugmentedImage> augmentedImages = new HashSet<>();
+    private AugmentedImage augmentedImage = null;
     private Anchor referencePointAnchor;
 
     @Override
@@ -256,7 +255,7 @@ public class MainActivity extends DaggerAppCompatActivity {
                     String[] filePathColumn = {MediaStore.Images.Media.DATA};
 
                     Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
-                    cursor.moveToFirst();
+                    Objects.requireNonNull(cursor).moveToFirst();
 
                     int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
                     String filePath = cursor.getString(columnIndex);
@@ -265,8 +264,6 @@ public class MainActivity extends DaggerAppCompatActivity {
                     Toast.makeText(this, filePath, Toast.LENGTH_LONG).show();
 
                     subsceneDetailView.addImageReferencePoint(filePath);
-
-//                    Bitmap image = BitmapFactory.decodeFile(filePath);
                 }
         }
     }
@@ -294,13 +291,17 @@ public class MainActivity extends DaggerAppCompatActivity {
         for (AugmentedImage updatedAugmentedImage : updatedAugmentedImages) {
             switch (updatedAugmentedImage.getTrackingState()) {
                 case TRACKING:
-                    if (!augmentedImages.contains(updatedAugmentedImage)) {
-                        augmentedImages.add(updatedAugmentedImage);
-                        imageReferencePointDetected(updatedAugmentedImage);
+                    if (augmentedImage == null || !(augmentedImage.equals(updatedAugmentedImage))) {
+                        if (updatedAugmentedImage.getTrackingMethod() == AugmentedImage.TrackingMethod.FULL_TRACKING) {
+                            augmentedImage = updatedAugmentedImage;
+                            imageReferencePointDetected(updatedAugmentedImage);
+                        }
                     }
                     break;
                 case STOPPED:
-                    augmentedImages.remove(updatedAugmentedImage);
+                    if ((augmentedImage != null) && (augmentedImage.equals(updatedAugmentedImage))) {
+                        augmentedImage = null;
+                    }
                     break;
             }
         }
@@ -356,7 +357,6 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     private void setupImageReferencePointRecognition(ARScene scene) {
         AsyncTask.execute(() -> {
-            // TODO: 28.06.2019 add all images from the scenes reference points
             Session session = arFragment.getArSceneView().getSession();
             Config config = Objects.requireNonNull(session).getConfig();
             AugmentedImageDatabase augmentedImageDatabase = new AugmentedImageDatabase(session);
@@ -368,18 +368,18 @@ public class MainActivity extends DaggerAppCompatActivity {
                 Bitmap augmentedImageBitmap = BitmapFactory.decodeFile(path);
                 augmentedImageDatabase.addImage(referencePoint.getFileName(), augmentedImageBitmap);
             });
-//            try (InputStream is = getAssets().open("default_marker.jpg")) {
-//                Bitmap augmentedImageBitmap = BitmapFactory.decodeStream(is);
-//                augmentedImageDatabase.addImage("default_marker", augmentedImageBitmap);
-//            } catch (IOException e) {
-//                Log.e(TAG, "IO exception loading augmented image bitmap.", e);
-//            }
             config.setAugmentedImageDatabase(augmentedImageDatabase);
             session.configure(config);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Bildreferenzpunkte können nun erkannt werden", Toast.LENGTH_LONG).show();
+            });
         });
     }
 
     private void imageReferencePointDetected(AugmentedImage image) {
+        if (currentScene == null) {
+            return;
+        }
         Log.d(TAG, "imageReferencePointDetected: " + image.getName());
         if (referencePointAnchor != null) {
             referencePointAnchor.detach();
@@ -387,11 +387,14 @@ public class MainActivity extends DaggerAppCompatActivity {
         referencePointAnchor = arFragment.getArSceneView().getSession().createAnchor(image.getCenterPose());
         environmentNode.setAnchor(referencePointAnchor);
 
+        currentReferencePoint = currentScene.getImageReferencePoint(image.getName());
+        Log.d(TAG, "imageReferencePointDetected: currentRefPoint:" + ((ImageReferencePoint) currentReferencePoint).getFileName());
+
         AnchorNode anchorNode = new AnchorNode(referencePointAnchor);
         anchorNode.setParent(arFragment.getArSceneView().getScene());
 
         // Create the transformable andy and add it to the anchor.
-        TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
+        Node andy = new Node();
         andy.setParent(anchorNode);
         andy.setRenderable(andyRenderable);
     }
