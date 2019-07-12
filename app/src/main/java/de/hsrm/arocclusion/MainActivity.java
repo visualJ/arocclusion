@@ -46,6 +46,7 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
@@ -71,6 +72,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
+import de.hsrm.arocclusion.util.PoseUtil;
 
 /**
  * This is an example activity that uses the Sceneform UX package to make common AR tasks easier.
@@ -104,10 +106,12 @@ public class MainActivity extends DaggerAppCompatActivity {
     private ARScene currentScene;
     private ARSubScene currentSubScene;
     private ReferencePoint currentReferencePoint;
-    private AnchorNode environmentNode = new AnchorNode();
+    private AnchorNode anchorNode = new AnchorNode();
+    private Node environmentNode = new Node();
 
     private AugmentedImage augmentedImage = null;
     private Anchor referencePointAnchor;
+    private Pose lastReferencePointPoseLocal;
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -129,7 +133,8 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
 
         arFragment.getArSceneView().getScene().addOnUpdateListener(this::onUpdateFrame);
-        arFragment.getArSceneView().getScene().addChild(environmentNode);
+        arFragment.getArSceneView().getScene().addChild(anchorNode);
+        anchorNode.addChild(environmentNode);
         scenesView.setArSceneRepository(arSceneRepository);
         scenesView.setScenesViewCallback(new ScenesView.ScenesViewCallback() {
             @Override
@@ -380,23 +385,59 @@ public class MainActivity extends DaggerAppCompatActivity {
         if (currentScene == null) {
             return;
         }
-        Log.d(TAG, "imageReferencePointDetected: " + image.getName());
-        if (referencePointAnchor != null) {
-            referencePointAnchor.detach();
-        }
-        referencePointAnchor = arFragment.getArSceneView().getSession().createAnchor(image.getCenterPose());
-        environmentNode.setAnchor(referencePointAnchor);
 
+        ReferencePoint lastReferencePoint = currentReferencePoint;
         currentReferencePoint = currentScene.getImageReferencePoint(image.getName());
         Log.d(TAG, "imageReferencePointDetected: currentRefPoint:" + ((ImageReferencePoint) currentReferencePoint).getFileName());
+        Toast.makeText(this, "Referenzpunkt: " + ((ImageReferencePoint) currentReferencePoint).getFileName(), Toast.LENGTH_SHORT).show();
+        Pose currentReferencePointPoseLocal = image.getCenterPose();
 
-        AnchorNode anchorNode = new AnchorNode(referencePointAnchor);
-        anchorNode.setParent(arFragment.getArSceneView().getScene());
+        // TODO: 12.07.2019 make this work with other subscenes too and change the subscene when detecting a reference point
+        if (!currentSubScene.getEnvironment().hasKnownReferencePointPosition()) {
+            currentReferencePoint.setPositionKnown(true);
+            arSceneRepository.saveARScene(currentScene);
+        } else if (lastReferencePoint != null && !currentReferencePoint.isPositionKnown() && lastReferencePoint.isPositionKnown()) {
+            Pose lastReferencePointPoseScene = PoseUtil.getPose(lastReferencePoint.getPosition(), lastReferencePoint.getRotation());
+            Pose currentReferencePointPoseScene = lastReferencePointPoseScene.compose(lastReferencePointPoseLocal.inverse().compose(currentReferencePointPoseLocal));
+            currentReferencePoint.setPosition(PoseUtil.getVector(currentReferencePointPoseScene));
+            currentReferencePoint.setRotation(PoseUtil.getQuaternion(currentReferencePointPoseScene));
+            currentReferencePoint.setPositionKnown(true);
+            arSceneRepository.saveARScene(currentScene);
+        }
 
-        // Create the transformable andy and add it to the anchor.
-        Node andy = new Node();
-        andy.setParent(anchorNode);
-        andy.setRenderable(andyRenderable);
+        if (currentReferencePoint.isPositionKnown()) {
+            Log.d(TAG, "imageReferencePointDetected: known position ref point: " + image.getName());
+            if (referencePointAnchor != null) {
+                referencePointAnchor.detach();
+            }
+
+            referencePointAnchor = arFragment.getArSceneView().getSession().createAnchor(currentReferencePointPoseLocal);
+            anchorNode.setAnchor(referencePointAnchor);
+            environmentNode.setLocalPosition(currentReferencePoint.getPosition().negated());
+            environmentNode.setLocalRotation(currentReferencePoint.getRotation().inverted());
+
+            AnchorNode andyAnchorNode = new AnchorNode(referencePointAnchor);
+            andyAnchorNode.setParent(arFragment.getArSceneView().getScene());
+
+            // Create the transformable andy and add it to the anchor.
+            Node andy = new Node();
+            andy.setParent(andyAnchorNode);
+            Pose t = PoseUtil.getPose(currentReferencePoint.getPosition(), currentReferencePoint.getRotation()).inverse();
+            andy.setLocalRotation(PoseUtil.getQuaternion(t));
+            andy.setLocalPosition(PoseUtil.getVector(t));
+            // TODO: 12.07.2019 position rotieren
+//            Quaternion r = currentReferencePoint.getRotation().inverted();
+//            Pose p = Pose.makeRotation(r.x, r.y, r.z, r.w);
+//            Vector3 pos = currentReferencePoint.getPosition().negated();
+//            float[] rv = p.rotateVector(new float[]{pos.x, pos.y, pos.z});
+//            andy.setLocalRotation(r);
+//            andy.setLocalPosition(new Vector3(rv[0], rv[1], rv[2]));
+//            andy.setLocalPosition(currentReferencePoint.getPosition());
+            andy.setRenderable(andyRenderable);
+
+            lastReferencePointPoseLocal = currentReferencePointPoseLocal;
+        }
+
     }
 
     private boolean isReferencePointActive() {

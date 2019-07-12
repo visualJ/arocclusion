@@ -33,4 +33,8 @@ public class Environment {
         }
         return filteredList;
     }
+
+    public boolean hasKnownReferencePointPosition() {
+        return getReferencePoints().stream().anyMatch(ReferencePoint::isPositionKnown);
+    }
 }

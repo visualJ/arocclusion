@@ -52,4 +52,5 @@ public class ARSubScene {
     public void setParent(ARScene parent) {
         this.parent = parent;
     }
+
 }
