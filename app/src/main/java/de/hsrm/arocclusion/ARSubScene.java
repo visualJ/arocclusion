@@ -16,9 +16,9 @@ public class ARSubScene {
     }
 
     public ARSubScene(String name, VirtualScene virtualScene, Environment environment) {
-        this.name = name;
-        this.virtualScene = virtualScene;
-        this.environment = environment;
+        setName(name);
+        setVirtualScene(virtualScene);
+        setEnvironment(environment);
     }
 
     public VirtualScene getVirtualScene() {
@@ -35,6 +35,7 @@ public class ARSubScene {
 
     public void setEnvironment(Environment environment) {
         this.environment = environment;
+        environment.setArSubScene(this);
     }
 
     public String getName() {
@@ -51,6 +52,11 @@ public class ARSubScene {
 
     public void setParent(ARScene parent) {
         this.parent = parent;
+    }
+
+    public void runPostDeserializationProcessing() {
+        setEnvironment(environment);
+        environment.runPostDeserializationProcessing();
     }
 
 }

@@ -9,6 +9,7 @@ public class ReferencePoint {
     private Vector3 position = Vector3.zero();
     private Quaternion rotation = Quaternion.identity();
     private boolean positionKnown;
+    private transient Environment environment;
 
     public ReferencePoint(String type) {
         this.type = type;
@@ -40,5 +41,13 @@ public class ReferencePoint {
 
     public void setPositionKnown(boolean positionKnown) {
         this.positionKnown = positionKnown;
+    }
+
+    public Environment getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
     }
 }

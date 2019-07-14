@@ -32,6 +32,7 @@ public class ARScene {
 
     public void runPostDeserializationProcessing() {
         setSubScenes(subScenes);
+        subScenes.forEach(ARSubScene::runPostDeserializationProcessing);
     }
 
     public void addSubscene(ARSubScene subScene) {
