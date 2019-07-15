@@ -392,6 +392,11 @@ public class MainActivity extends DaggerAppCompatActivity {
         Toast.makeText(this, "Referenzpunkt: " + ((ImageReferencePoint) currentReferencePoint).getFileName(), Toast.LENGTH_SHORT).show();
         Pose currentReferencePointPoseLocal = image.getCenterPose();
 
+        ARSubScene newReferencePointSubscene = currentReferencePoint.getEnvironment().getArSubScene();
+        if (!currentSubScene.equals(newReferencePointSubscene)) {
+            activateSubScene(newReferencePointSubscene);
+        }
+
         // TODO: 12.07.2019 make this work with other subscenes too and change the subscene when detecting a reference point
         if (!currentSubScene.getEnvironment().hasKnownReferencePointPosition()) {
             currentReferencePoint.setPositionKnown(true);
@@ -422,17 +427,8 @@ public class MainActivity extends DaggerAppCompatActivity {
             // Create the transformable andy and add it to the anchor.
             Node andy = new Node();
             andy.setParent(andyAnchorNode);
-            Pose t = PoseUtil.getPose(currentReferencePoint.getPosition(), currentReferencePoint.getRotation()).inverse();
-            andy.setLocalRotation(PoseUtil.getQuaternion(t));
-            andy.setLocalPosition(PoseUtil.getVector(t));
-            // TODO: 12.07.2019 position rotieren
-//            Quaternion r = currentReferencePoint.getRotation().inverted();
-//            Pose p = Pose.makeRotation(r.x, r.y, r.z, r.w);
-//            Vector3 pos = currentReferencePoint.getPosition().negated();
-//            float[] rv = p.rotateVector(new float[]{pos.x, pos.y, pos.z});
-//            andy.setLocalRotation(r);
-//            andy.setLocalPosition(new Vector3(rv[0], rv[1], rv[2]));
-//            andy.setLocalPosition(currentReferencePoint.getPosition());
+            andy.setLocalPosition(currentReferencePoint.getPosition().negated());
+            andy.setLocalRotation(currentReferencePoint.getRotation().inverted());
             andy.setRenderable(andyRenderable);
 
             lastReferencePointPoseLocal = currentReferencePointPoseLocal;
