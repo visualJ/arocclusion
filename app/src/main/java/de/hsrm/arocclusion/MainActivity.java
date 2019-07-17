@@ -50,6 +50,7 @@ import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.sceneform.AnchorNode;
+import com.google.ar.sceneform.Camera;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.Material;
@@ -101,8 +102,9 @@ public class MainActivity extends DaggerAppCompatActivity {
     private Material proxyVisualMat;
     private List<Node> proxyNodes = new ArrayList<>();
     private boolean showProxies = true;
+    private boolean realTimePointCloudProxiesEnabled = false;
 
-    private PoindCloudProxyGenerator poindCloudProxyGenerator = new PoindCloudProxyGenerator();
+    private PoindCloudProxyGenerator pointCloudProxyGenerator = new PoindCloudProxyGenerator();
     private ARScene currentScene;
     private ARSubScene currentSubScene;
     private ReferencePoint currentReferencePoint;
@@ -112,6 +114,7 @@ public class MainActivity extends DaggerAppCompatActivity {
     private AugmentedImage augmentedImage = null;
     private Anchor referencePointAnchor;
     private Pose lastReferencePointPoseLocal;
+    private Node rtPointCloudProxyNode = new Node();
 
     @Override
     @SuppressWarnings({"AndroidApiChecker", "FutureReturnValueIgnored"})
@@ -148,6 +151,9 @@ public class MainActivity extends DaggerAppCompatActivity {
             }
         });
         subsceneDetailView.setArSceneRepository(arSceneRepository);
+
+        Camera camera = arFragment.getArSceneView().getScene().getCamera();
+        rtPointCloudProxyNode.setParent(camera);
 
         // add a test scene, if not yet available
 //        if (!arSceneRepository.getARSceneNames().contains("test")) {
@@ -239,15 +245,20 @@ public class MainActivity extends DaggerAppCompatActivity {
 
         Frame arFrame = arFragment.getArSceneView().getArFrame();
         if (arFrame != null) {
-            ProxyModel proxy = poindCloudProxyGenerator.generateProxyModel(arFrame, referencePointAnchor);
+            ProxyModel proxy = pointCloudProxyGenerator.generateProxyModel(arFrame, referencePointAnchor.getPose());
             if (proxy != null) {
                 addProxyToCurrentSubScene(proxy, showProxies ? proxyVisualMat : proxyMat);
                 arSceneRepository.saveARScene(currentScene);
-                arSceneRepository.debugPrintJson(currentScene);
             } else {
                 Log.e(TAG, "onProxyGenButtonClick: es konnte kein proxy erstellt werden");
             }
         }
+    }
+
+    @OnClick(R.id.rt_point_cloud_proxy_button)
+    void onRTPointCloudProxyButtonClick() {
+        realTimePointCloudProxiesEnabled = !realTimePointCloudProxiesEnabled;
+        rtPointCloudProxyNode.setEnabled(realTimePointCloudProxiesEnabled);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
@@ -292,6 +303,7 @@ public class MainActivity extends DaggerAppCompatActivity {
             return;
         }
 
+        // Check for new ImageReferencePoints
         Collection<AugmentedImage> updatedAugmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
         for (AugmentedImage updatedAugmentedImage : updatedAugmentedImages) {
             switch (updatedAugmentedImage.getTrackingState()) {
@@ -309,6 +321,12 @@ public class MainActivity extends DaggerAppCompatActivity {
                     }
                     break;
             }
+        }
+
+        // real time point cloud proxies
+        if (realTimePointCloudProxiesEnabled) {
+            ProxyModel proxyModel = pointCloudProxyGenerator.generateProxyModel(frame, frame.getCamera().getPose());
+            buildProxyRenderable(proxyModel, showProxies ? proxyVisualMat : proxyMat, rtPointCloudProxyNode::setRenderable);
         }
     }
 
@@ -332,9 +350,11 @@ public class MainActivity extends DaggerAppCompatActivity {
         addProxyToScenegraph(proxy, material);
     }
 
-    private void addProxyToScenegraph(ProxyModel proxy, Material material) {
+    private static void buildProxyRenderable(ProxyModel proxy, Material material, Consumer<ModelRenderable> callback) {
+        if (proxy == null) {
+            return;
+        }
         List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
-        Log.e(TAG, "addProxyToScenegraph: " + material + " : " + proxy.getTriangleIndices());
         subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(material).setTriangleIndices(proxy.getTriangleIndices()).build());
 
         RenderableDefinition renderableDefinition = RenderableDefinition.builder()
@@ -346,18 +366,49 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .build()
                 .thenAccept(modelRenderable -> {
                     modelRenderable.setMaterial(material);
-                    // place model in scene
-                    Node node = new Node();
-                    node.setParent(environmentNode);
-                    node.setRenderable(modelRenderable);
-                    node.setLocalPosition(proxy.getPosition());
-                    node.setLocalRotation(proxy.getRotation());
-                    proxyNodes.add(node);
+                    callback.accept(modelRenderable);
                 })
                 .exceptionally(throwable -> {
                     throwable.printStackTrace();
                     return null;
                 });
+    }
+
+    private void addProxyToScenegraph(ProxyModel proxy, Material material) {
+        buildProxyRenderable(proxy, material, modelRenderable -> {
+            // place model in scene
+            Node node = new Node();
+            node.setParent(environmentNode);
+            node.setRenderable(modelRenderable);
+            node.setLocalPosition(proxy.getPosition());
+            node.setLocalRotation(proxy.getRotation());
+            proxyNodes.add(node);
+        });
+
+//        List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
+//        subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(material).setTriangleIndices(proxy.getTriangleIndices()).build());
+//
+//        RenderableDefinition renderableDefinition = RenderableDefinition.builder()
+//                .setVertices(proxy.getVertices())
+//                .setSubmeshes(subMeshes)
+//                .build();
+//        ModelRenderable.builder()
+//                .setSource(renderableDefinition)
+//                .build()
+//                .thenAccept(modelRenderable -> {
+//                    modelRenderable.setMaterial(material);
+//                    // place model in scene
+//                    Node node = new Node();
+//                    node.setParent(environmentNode);
+//                    node.setRenderable(modelRenderable);
+//                    node.setLocalPosition(proxy.getPosition());
+//                    node.setLocalRotation(proxy.getRotation());
+//                    proxyNodes.add(node);
+//                })
+//                .exceptionally(throwable -> {
+//                    throwable.printStackTrace();
+//                    return null;
+//                });
     }
 
     private void setupImageReferencePointRecognition(ARScene scene) {
@@ -397,7 +448,6 @@ public class MainActivity extends DaggerAppCompatActivity {
             activateSubScene(newReferencePointSubscene);
         }
 
-        // TODO: 12.07.2019 make this work with other subscenes too and change the subscene when detecting a reference point
         if (!currentSubScene.getEnvironment().hasKnownReferencePointPosition()) {
             currentReferencePoint.setPositionKnown(true);
             arSceneRepository.saveARScene(currentScene);

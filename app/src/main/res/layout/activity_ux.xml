@@ -21,6 +21,14 @@
     android:layout_height="match_parent"
     tools:context="de.hsrm.arocclusion.MainActivity">
 
+  <Button
+      android:id="@+id/rt_point_cloud_proxy_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="RTPCP"
+      app:layout_constraintBottom_toBottomOf="@+id/subscene_detail_view"
+      app:layout_constraintStart_toStartOf="@+id/ux_fragment" />
+
   <fragment
       android:id="@+id/ux_fragment"
       android:name="de.hsrm.arocclusion.CustomArFragment"
@@ -44,7 +52,7 @@
       android:id="@+id/toggle_proxy_material_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:text="Proxy Material"
+      android:text="Proxy Mat"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent" />
 
@@ -68,7 +76,9 @@
       app:layout_constraintEnd_toEndOf="parent"
       app:layout_constraintStart_toStartOf="parent"
       app:layout_constraintTop_toTopOf="parent"
-      app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent">
+
+    </de.hsrm.arocclusion.SubsceneDetailView>
 
   <Button
       android:id="@+id/scenes_panel_button"
@@ -78,12 +88,12 @@
       app:layout_constraintStart_toEndOf="@+id/toggle_proxy_material_button"
       app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/subscene_detail_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="+"
-        app:layout_constraintStart_toEndOf="@+id/scenes_panel_button"
-        app:layout_constraintTop_toTopOf="parent" />
+  <Button
+      android:id="@+id/subscene_detail_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="Ref Punkte"
+      app:layout_constraintStart_toEndOf="@+id/scenes_panel_button"
+      app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
