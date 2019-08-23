@@ -73,6 +73,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
+import de.hsrm.arocclusion.util.MeshUtil;
 import de.hsrm.arocclusion.util.PoseUtil;
 
 /**
@@ -356,6 +357,8 @@ public class MainActivity extends DaggerAppCompatActivity {
         }
         List<RenderableDefinition.Submesh> subMeshes = new ArrayList<>();
         subMeshes.add(new RenderableDefinition.Submesh.Builder().setName("proxy").setMaterial(material).setTriangleIndices(proxy.getTriangleIndices()).build());
+
+        MeshUtil.calculateVertexNormals(proxy.getVertices(), proxy.getTriangleIndices());
 
         RenderableDefinition renderableDefinition = RenderableDefinition.builder()
                 .setVertices(proxy.getVertices())
