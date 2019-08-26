@@ -17,9 +17,10 @@ fragment {
     void material(inout MaterialInputs material) {
             prepareMaterial(material);
             //material.baseColor = materialParams.baseColor;
-            material.baseColor.r = 1.0 - getNdotV();
-            material.baseColor.g = getNdotV();
-            material.baseColor.b = 0.0;
-            //material.baseColor.rgb = getWorldNormalVector();
+            material.baseColor.a = 0.8;
+            //material.baseColor.r = 1.0 - getNdotV();
+            //material.baseColor.g = getNdotV();
+            //material.baseColor.b = 0.0;
+            material.baseColor.rgb = (getWorldNormalVector() + 1.0) / 2.0;
         }
 }

@@ -369,6 +369,7 @@ public class MainActivity extends DaggerAppCompatActivity {
                 .build()
                 .thenAccept(modelRenderable -> {
                     modelRenderable.setMaterial(material);
+                    modelRenderable.setShadowCaster(false);
                     callback.accept(modelRenderable);
                 })
                 .exceptionally(throwable -> {
