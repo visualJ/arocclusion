@@ -77,6 +77,11 @@ sceneform.asset('sampledata/models/andy.obj',
         'sampledata/models/andy.sfa',
         'src/main/res/raw/andy')
 
+sceneform.asset('sampledata/models/refpoint.obj',
+        'default',
+        'sampledata/models/refpoint.sfa',
+        'src/main/res/raw/refpoint')
+
 sceneform.asset('sampledata/models/andy.obj',
         'default',
         'sampledata/models/proxy.sfa',

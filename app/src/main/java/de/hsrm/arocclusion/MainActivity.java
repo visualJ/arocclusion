@@ -99,6 +99,7 @@ public class MainActivity extends DaggerAppCompatActivity {
 
     private ArFragment arFragment;
     private ModelRenderable andyRenderable;
+    private ModelRenderable refpointRenderable;
     private Material proxyMat;
     private Material proxyVisualMat;
     private List<Node> proxyNodes = new ArrayList<>();
@@ -165,6 +166,7 @@ public class MainActivity extends DaggerAppCompatActivity {
 //        }
 
         loadModelRenderable(R.raw.andy, renderable -> andyRenderable = renderable, "Unable to load andy renderable");
+        loadModelRenderable(R.raw.refpoint, renderable -> refpointRenderable = renderable, "Unable to load refpoint renderable");
         loadModelRenderable(R.raw.proxy, renderable -> {
             proxyMat = renderable.getMaterial();
             proxyMat.setFloat4("baseColor", 0f, 0.8f, 1f, 0.6f);
@@ -478,12 +480,12 @@ public class MainActivity extends DaggerAppCompatActivity {
             AnchorNode andyAnchorNode = new AnchorNode(referencePointAnchor);
             andyAnchorNode.setParent(arFragment.getArSceneView().getScene());
 
-            // Create the transformable andy and add it to the anchor.
+            // Create the transformable node and add it to the anchor.
             Node andy = new Node();
             andy.setParent(andyAnchorNode);
             andy.setLocalPosition(currentReferencePoint.getPosition().negated());
             andy.setLocalRotation(currentReferencePoint.getRotation().inverted());
-            andy.setRenderable(andyRenderable);
+            andy.setRenderable(refpointRenderable);
 
             lastReferencePointPoseLocal = currentReferencePointPoseLocal;
         }
