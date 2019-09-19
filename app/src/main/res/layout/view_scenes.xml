@@ -14,10 +14,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="Szenen"
+        android:text="AR-Erfahrungen"
         android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/new_scene_button"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
@@ -26,10 +26,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:text="Sub-Szenen"
+        android:text="AR-Szenen"
         android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/new_subscene_button"
         app:layout_constraintTop_toBottomOf="@+id/scenes_list" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -46,18 +46,22 @@
         android:id="@+id/new_scene_button"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="0dp"
         android:text="+"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/new_subscene_button"
         android:layout_width="50dp"
         android:layout_height="50dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="0dp"
         android:text="+"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/scenes_list" />
 
     <androidx.recyclerview.widget.RecyclerView
